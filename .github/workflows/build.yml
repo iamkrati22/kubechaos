@@ -28,37 +28,72 @@ jobs:
 
     - name: Build for Windows
       if: matrix.os == 'windows-latest'
+      shell: pwsh
       run: |
+        Write-Host "🔨 Building Chaos Monkey for Windows..."
         go build -v -o chaos-monkey-windows-amd64.exe main.go test_pods.go chaos_types.go version.go
-        echo "✅ Windows build completed"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Windows build failed!" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "✅ Windows build completed" -ForegroundColor Green
 
     - name: Build for Linux
       if: matrix.os == 'ubuntu-latest'
+      shell: bash
       run: |
+        echo "🔨 Building Chaos Monkey for Linux..."
         go build -v -o chaos-monkey-linux-amd64 main.go test_pods.go chaos_types.go version.go
+        if [ $? -ne 0 ]; then
+            echo "❌ Linux build failed!"
+            exit 1
+        fi
         echo "✅ Linux build completed"
 
     - name: Build for macOS
       if: matrix.os == 'macos-latest'
+      shell: bash
       run: |
+        echo "🔨 Building Chaos Monkey for macOS..."
         go build -v -o chaos-monkey-darwin-amd64 main.go test_pods.go chaos_types.go version.go
+        if [ $? -ne 0 ]; then
+            echo "❌ macOS build failed!"
+            exit 1
+        fi
         echo "✅ macOS build completed"
 
     - name: Create checksums for Windows
       if: matrix.os == 'windows-latest'
+      shell: pwsh
       run: |
-        echo "Creating Windows checksums..."
-        certutil -hashfile chaos-monkey-*.exe SHA256 > checksums.txt
-        echo "Checksums:"
-        type checksums.txt
+        Write-Host "Creating Windows checksums..."
+        $hash = Get-FileHash -Path "chaos-monkey-windows-amd64.exe" -Algorithm SHA256
+        $hash.Hash | Out-File -FilePath "checksums-windows.txt" -Encoding ASCII
+        Write-Host "Checksum: $($hash.Hash)"
 
-    - name: Create checksums for Unix
-      if: matrix.os != 'windows-latest'
+    - name: Create checksums for Linux
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
       run: |
-        echo "Creating Unix checksums..."
-        shasum -a 256 chaos-monkey-* > checksums.txt
+        echo "Creating Linux checksums..."
+        shasum -a 256 chaos-monkey-linux-amd64 > checksums-linux.txt
         echo "Checksums:"
-        cat checksums.txt
+        cat checksums-linux.txt
+
+    - name: Create checksums for macOS
+      if: matrix.os == 'macos-latest'
+      shell: bash
+      run: |
+        echo "Creating macOS checksums..."
+        shasum -a 256 chaos-monkey-darwin-amd64 > checksums-macos.txt
+        echo "Checksums:"
+        cat checksums-macos.txt
+
+    - name: List build artifacts
+      shell: bash
+      run: |
+        echo "Build artifacts:"
+        ls -la chaos-monkey-* checksums-*.txt || true
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -66,7 +101,7 @@ jobs:
         name: chaos-monkey-${{ matrix.os }}
         path: |
           chaos-monkey-*
-          checksums.txt
+          checksums-*.txt
 
   release:
     needs: build
@@ -80,6 +115,12 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    - name: List downloaded artifacts
+      shell: bash
+      run: |
+        echo "Downloaded artifacts:"
+        find . -name "chaos-monkey-*" -o -name "checksums-*.txt" | sort
+
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
@@ -87,7 +128,7 @@ jobs:
           **/chaos-monkey-windows-amd64.exe
           **/chaos-monkey-linux-amd64
           **/chaos-monkey-darwin-amd64
-          **/checksums.txt
+          **/checksums-*.txt
         draft: false
         prerelease: false
       env:
