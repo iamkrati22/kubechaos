@@ -44,11 +44,6 @@ jobs:
         go build -v -o chaos-monkey-darwin-amd64 main.go test_pods.go chaos_types.go version.go
         echo "✅ macOS build completed"
 
-    - name: List build artifacts
-      run: |
-        echo "Build artifacts:"
-        ls -la chaos-monkey-*
-
     - name: Create checksums
       run: |
         if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -80,12 +75,6 @@ jobs:
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
-
-    - name: List downloaded artifacts
-      run: |
-        echo "Downloaded artifacts:"
-        find . -name "chaos-monkey-*" -type f
-        find . -name "checksums.txt" -type f
 
     - name: Create release
       uses: softprops/action-gh-release@v1
