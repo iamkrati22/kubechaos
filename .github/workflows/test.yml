@@ -1,0 +1,38 @@
+name: Test Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.21
+
+    - name: Verify dependencies
+      run: go mod download
+
+    - name: Build for Linux
+      run: |
+        go build -o chaos-monkey-linux-amd64 main.go test_pods.go chaos_types.go version.go
+        echo "✅ Build successful"
+
+    - name: Test binary
+      run: |
+        ./chaos-monkey-linux-amd64 --version
+        ./chaos-monkey-linux-amd64 --help
+
+    - name: Create checksum
+      run: |
+        shasum -a 256 chaos-monkey-linux-amd64 > checksum.txt
+        cat checksum.txt 

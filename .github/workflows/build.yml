@@ -23,29 +23,51 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
+    - name: Verify dependencies
+      run: go mod download
+
     - name: Build for Windows
       if: matrix.os == 'windows-latest'
       run: |
-        go build -o chaos-monkey-windows-amd64.exe main.go test_pods.go chaos_types.go version.go
-        echo "chaos-monkey-windows-amd64.exe" >> $GITHUB_OUTPUT
+        go build -v -o chaos-monkey-windows-amd64.exe main.go test_pods.go chaos_types.go version.go
+        echo "✅ Windows build completed"
 
     - name: Build for Linux
       if: matrix.os == 'ubuntu-latest'
       run: |
-        go build -o chaos-monkey-linux-amd64 main.go test_pods.go chaos_types.go version.go
-        echo "chaos-monkey-linux-amd64" >> $GITHUB_OUTPUT
+        go build -v -o chaos-monkey-linux-amd64 main.go test_pods.go chaos_types.go version.go
+        echo "✅ Linux build completed"
 
     - name: Build for macOS
       if: matrix.os == 'macos-latest'
       run: |
-        go build -o chaos-monkey-darwin-amd64 main.go test_pods.go chaos_types.go version.go
-        echo "chaos-monkey-darwin-amd64" >> $GITHUB_OUTPUT
+        go build -v -o chaos-monkey-darwin-amd64 main.go test_pods.go chaos_types.go version.go
+        echo "✅ macOS build completed"
+
+    - name: List build artifacts
+      run: |
+        echo "Build artifacts:"
+        ls -la chaos-monkey-*
+
+    - name: Create checksums
+      run: |
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          echo "Creating Windows checksums..."
+          certutil -hashfile chaos-monkey-*.exe SHA256 > checksums.txt
+        else
+          echo "Creating Unix checksums..."
+          shasum -a 256 chaos-monkey-* > checksums.txt
+        fi
+        echo "Checksums:"
+        cat checksums.txt
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: chaos-monkey-${{ matrix.os }}
-        path: chaos-monkey-*
+        path: |
+          chaos-monkey-*
+          checksums.txt
 
   release:
     needs: build
@@ -59,6 +81,12 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    - name: List downloaded artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        find . -name "chaos-monkey-*" -type f
+        find . -name "checksums.txt" -type f
+
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
@@ -66,6 +94,7 @@ jobs:
           **/chaos-monkey-windows-amd64.exe
           **/chaos-monkey-linux-amd64
           **/chaos-monkey-darwin-amd64
+          **/checksums.txt
         draft: false
         prerelease: false
       env:
