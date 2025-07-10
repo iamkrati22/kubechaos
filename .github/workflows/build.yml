@@ -44,15 +44,19 @@ jobs:
         go build -v -o chaos-monkey-darwin-amd64 main.go test_pods.go chaos_types.go version.go
         echo "✅ macOS build completed"
 
-    - name: Create checksums
+    - name: Create checksums for Windows
+      if: matrix.os == 'windows-latest'
       run: |
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          echo "Creating Windows checksums..."
-          certutil -hashfile chaos-monkey-*.exe SHA256 > checksums.txt
-        else
-          echo "Creating Unix checksums..."
-          shasum -a 256 chaos-monkey-* > checksums.txt
-        fi
+        echo "Creating Windows checksums..."
+        certutil -hashfile chaos-monkey-*.exe SHA256 > checksums.txt
+        echo "Checksums:"
+        type checksums.txt
+
+    - name: Create checksums for Unix
+      if: matrix.os != 'windows-latest'
+      run: |
+        echo "Creating Unix checksums..."
+        shasum -a 256 chaos-monkey-* > checksums.txt
         echo "Checksums:"
         cat checksums.txt
 
