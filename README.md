@@ -396,4 +396,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Remember: The goal is to test resilience, not destroy production systems!** ðŸŽ­ 
+**Remember: The goal is to test resilience, not destroy production!** ðŸŽ­ 
