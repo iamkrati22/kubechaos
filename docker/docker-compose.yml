@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  chaos-monkey:
+    build: .
+    container_name: chaos-monkey
+    volumes:
+      # Mount kubeconfig
+      - ~/.kube:/home/chaos/.kube:ro
+      # Mount scripts for easy access
+      - ./scripts:/app/scripts:ro
+    environment:
+      # Set kubeconfig path
+      - KUBECONFIG=/home/chaos/.kube/config
+    command: ["--help"]
+    profiles:
+      - default
+
+  # Example: Run CPU stress chaos
+  chaos-cpu-stress:
+    build: .
+    container_name: chaos-cpu-stress
+    volumes:
+      - ~/.kube:/home/chaos/.kube:ro
+    environment:
+      - KUBECONFIG=/home/chaos/.kube/config
+    command: ["-chaos-type=in-pod-cpu-stress", "-intensity=5", "-duration=30s", "-labels=app=nginx"]
+    profiles:
+      - cpu-stress
+
+  # Example: Run memory stress chaos
+  chaos-memory-stress:
+    build: .
+    container_name: chaos-memory-stress
+    volumes:
+      - ~/.kube:/home/chaos/.kube:ro
+    environment:
+      - KUBECONFIG=/home/chaos/.kube/config
+    command: ["-chaos-type=in-pod-memory-stress", "-intensity=6", "-duration=45s", "-labels=app=nginx"]
+    profiles:
+      - memory-stress
+
+  # Example: Run cron-based chaos
+  chaos-cron:
+    build: .
+    container_name: chaos-cron
+    volumes:
+      - ~/.kube:/home/chaos/.kube:ro
+    environment:
+      - KUBECONFIG=/home/chaos/.kube/config
+    command: ["-cron=*/30 * * * * *", "-chaos-type=kill-process", "-intensity=3", "-labels=app=nginx"]
+    profiles:
+      - cron-chaos 

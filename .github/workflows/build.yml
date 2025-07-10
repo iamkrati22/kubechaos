@@ -1,0 +1,72 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: [1.21]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Build for Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        go build -o chaos-monkey-windows-amd64.exe main.go test_pods.go chaos_types.go version.go
+        echo "chaos-monkey-windows-amd64.exe" >> $GITHUB_OUTPUT
+
+    - name: Build for Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        go build -o chaos-monkey-linux-amd64 main.go test_pods.go chaos_types.go version.go
+        echo "chaos-monkey-linux-amd64" >> $GITHUB_OUTPUT
+
+    - name: Build for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        go build -o chaos-monkey-darwin-amd64 main.go test_pods.go chaos_types.go version.go
+        echo "chaos-monkey-darwin-amd64" >> $GITHUB_OUTPUT
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chaos-monkey-${{ matrix.os }}
+        path: chaos-monkey-*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          **/chaos-monkey-windows-amd64.exe
+          **/chaos-monkey-linux-amd64
+          **/chaos-monkey-darwin-amd64
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

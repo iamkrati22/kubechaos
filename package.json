@@ -1,0 +1,52 @@
+{
+  "name": "chaos-monkey",
+  "version": "1.0.0",
+  "description": "A Kubernetes chaos engineering tool for testing application resilience",
+  "main": "index.js",
+  "bin": {
+    "chaos-monkey": "./bin/chaos-monkey.js"
+  },
+  "scripts": {
+    "build": "./build.sh",
+    "install": "./install.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "kubernetes",
+    "chaos-engineering",
+    "resilience-testing",
+    "devops",
+    "sre",
+    "chaos-monkey"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-repo/chaos-monkey.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-repo/chaos-monkey/issues"
+  },
+  "homepage": "https://github.com/your-repo/chaos-monkey#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "files": [
+    "dist/",
+    "bin/",
+    "*.md",
+    "*.sh",
+    "*.ps1"
+  ],
+  "preferGlobal": true
+} 
